@@ -1,73 +1,195 @@
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { app } from "./services/firebase";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate
+} from "react-router-dom";
+
+import { useState, useEffect } from "react";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged
+} from "firebase/auth";
+
+import { app, db } from "./services/firebase";
+
+import {
+  collection,
+  getDocs
+} from "firebase/firestore";
+
+/* COMPONENTES */
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import ProductCard from "./components/ProductCard";
+
+/* PAGINAS */
+import ProductDetail from "./pages/ProductDetail";
 
 /* ===================== LOGIN ===================== */
+
 function Login() {
+
   const navigate = useNavigate();
+
   const auth = getAuth(app);
 
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       navigate("/home");
+
     } catch (error) {
+
       alert("Error: " + error.message);
+
     }
   };
 
   return (
+
     <div style={styles.container}>
+
       <div style={styles.card}>
-        <h2 style={{ marginBottom: "20px" }}>Iniciar Sesión</h2>
+
+        <h2>Iniciar Sesión</h2>
 
         <input
           type="email"
           placeholder="Correo"
           style={styles.input}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) =>
+            setEmail(e.target.value)
+          }
         />
 
         <input
           type="password"
           placeholder="Contraseña"
           style={styles.input}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) =>
+            setPassword(e.target.value)
+          }
         />
 
-        <button style={styles.button} onClick={handleLogin}>
+        <button
+          style={styles.button}
+          onClick={handleLogin}
+        >
           Entrar
         </button>
+
       </div>
+
     </div>
   );
 }
 
 /* ===================== HOME ===================== */
-function Home() {
-  return (
-    <div style={homeStyles.container}>
-      
-      {/* HEADER */}
-      <div style={homeStyles.header}>
-        <h1>Bienvenida 💗</h1>
-        <p>Explora tu bazar</p>
-      </div>
 
-      {/* CATÁLOGO */}
+function Home() {
+
+  const [products, setProducts] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+
+    const fetchProducts = async () => {
+
+      try {
+
+        const querySnapshot = await getDocs(
+          collection(db, "Productos")
+        );
+
+        const data = querySnapshot.docs.map(
+          (doc) => ({
+            id: doc.id,
+            ...doc.data()
+          })
+        );
+
+        setProducts(data);
+
+      } catch (error) {
+
+        console.error(
+          "Error cargando productos:",
+          error
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+    fetchProducts();
+
+  }, []);
+
+  if (loading) {
+
+    return (
+      <h2 style={{ textAlign: "center" }}>
+        Cargando catálogo...
+      </h2>
+    );
+  }
+
+  return (
+
+    <div style={homeStyles.container}>
+
+      {/* NAVBAR */}
+      <Navbar />
+
+      {/* HERO */}
+      <Hero />
+
+      {/* CATALOGO */}
       <div style={homeStyles.catalogo}>
-        <h2>Catálogo</h2>
+
+        <h2 style={homeStyles.title}>
+          Catálogo
+        </h2>
 
         <div style={homeStyles.grid}>
-          <div style={homeStyles.card}>Blusa</div>
-          <div style={homeStyles.card}>Vestido</div>
-          <div style={homeStyles.card}>Pantalón</div>
-          <div style={homeStyles.card}>Falda</div>
+
+          {products.length === 0 ? (
+
+            <p>No hay productos aún</p>
+
+          ) : (
+
+            products.map((product) => (
+
+              <ProductCard
+                key={product.id}
+                product={product}
+              />
+
+            ))
+
+          )}
+
         </div>
+
       </div>
 
     </div>
@@ -75,13 +197,71 @@ function Home() {
 }
 
 /* ===================== APP ===================== */
+
 function App() {
+
+  const [user, setUser] = useState(null);
+
+  const [loadingAuth, setLoadingAuth] =
+    useState(true);
+
+  const auth = getAuth(app);
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onAuthStateChanged(
+        auth,
+        (currentUser) => {
+
+          setUser(currentUser);
+
+          setLoadingAuth(false);
+
+        }
+      );
+
+    return () => unsubscribe();
+
+  }, []);
+
+  if (loadingAuth) {
+
+    return (
+      <h2 style={{ textAlign: "center" }}>
+        Cargando...
+      </h2>
+    );
+  }
+
   return (
+
     <BrowserRouter>
+
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/home" element={<Home />} />
+
+        {/* LOGIN / HOME */}
+        <Route
+          path="/"
+          element={
+            user ? <Home /> : <Login />
+          }
+        />
+
+        {/* HOME */}
+        <Route
+          path="/home"
+          element={<Home />}
+        />
+
+        {/* PRODUCTO 3D */}
+        <Route
+          path="/product/:id"
+          element={<ProductDetail />}
+        />
+
       </Routes>
+
     </BrowserRouter>
   );
 }
@@ -89,7 +269,9 @@ function App() {
 export default App;
 
 /* ===================== ESTILOS LOGIN ===================== */
+
 const styles = {
+
   container: {
     height: "100vh",
     display: "flex",
@@ -97,59 +279,62 @@ const styles = {
     alignItems: "center",
     background: "#fce4ec"
   },
+
   card: {
     background: "#fff",
     padding: "30px",
-    borderRadius: "15px",
-    width: "300px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+    borderRadius: "20px",
+    width: "320px",
+    boxShadow:
+      "0 10px 25px rgba(0,0,0,0.1)",
     textAlign: "center"
   },
+
   input: {
     width: "100%",
-    padding: "10px",
+    padding: "12px",
     marginBottom: "15px",
-    borderRadius: "8px",
+    borderRadius: "10px",
     border: "1px solid #ccc"
   },
+
   button: {
     width: "100%",
-    padding: "10px",
+    padding: "12px",
     background: "#ec407a",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "10px",
     cursor: "pointer",
     fontWeight: "bold"
   }
 };
 
 /* ===================== ESTILOS HOME ===================== */
+
 const homeStyles = {
+
   container: {
-    background: "#fce4ec",
+    background: "#fff5f8",
     minHeight: "100vh"
   },
-  header: {
-    background: "#fff",
-    padding: "40px",
-    borderBottomLeftRadius: "30px",
-    borderBottomRightRadius: "30px",
-    textAlign: "center"
-  },
+
   catalogo: {
-    padding: "20px"
+    padding: "40px"
   },
+
+  title: {
+    textAlign: "center",
+    marginBottom: "40px",
+    fontSize: "40px"
+  },
+
   grid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "15px"
-  },
-  card: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "15px",
-    textAlign: "center",
-    boxShadow: "0 5px 10px rgba(0,0,0,0.1)"
+
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(250px,1fr))",
+
+    gap: "25px"
   }
 };

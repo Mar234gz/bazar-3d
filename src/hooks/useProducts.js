@@ -1,24 +1,28 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "../services/products";
+import { db } from "../services/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function useProducts() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProducts() {
+    const fetchProducts = async () => {
       try {
-        const data = await getProducts();
+        const querySnapshot = await getDocs(collection(db, "productos"));
+
+        const data = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
         setProducts(data);
       } catch (error) {
-        console.error("Error al obtener productos:", error);
-      } finally {
-        setLoading(false);
+        console.error("Error obteniendo productos:", error);
       }
-    }
+    };
 
     fetchProducts();
   }, []);
 
-  return { products, loading };
+  return products;
 }
