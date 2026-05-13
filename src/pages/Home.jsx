@@ -1,42 +1,151 @@
+import { useEffect, useState } from "react";
+
+import { collection, getDocs } from "firebase/firestore";
+
+import { db } from "../services/firebase";
+
+/* COMPONENTES */
+import Navbar from "../components/Navbar";
+import Hero from "../components/Hero";
+import ProductCard from "../components/ProductCard";
+import Viewer3D from "../components/Viewer3D";
+
+/* ESTILOS */
+import "./Home.css";
+
 function Home() {
-  return (
-    <div style={{ background: "#fce4ec", minHeight: "100vh" }}>
-      
-      {/* HEADER */}
-      <div style={{
-        background: "#fff",
-        padding: "40px",
-        borderBottomLeftRadius: "30px",
-        borderBottomRightRadius: "30px",
-        textAlign: "center"
-      }}>
-        <h1>Bienvenida 💗</h1>
-        <p>Explora tu bazar</p>
+
+  const [products, setProducts] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+
+    const fetchProducts = async () => {
+
+      try {
+
+        const querySnapshot = await getDocs(
+          collection(db, "Productos")
+        );
+
+        const data = querySnapshot.docs.map(
+          (doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })
+        );
+
+        setProducts(data);
+
+      } catch (error) {
+
+        console.error(
+          "Error cargando productos:",
+          error
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+    fetchProducts();
+
+  }, []);
+
+  /* LOADING */
+
+  if (loading) {
+
+    return (
+
+      <div className="loading-container">
+
+        <h2>Cargando catálogo...</h2>
+
       </div>
+    );
+  }
+
+  return (
+
+    <div className="home-container">
+
+      {/* NAVBAR */}
+      <Navbar />
+
+      {/* HERO */}
+      <Hero />
+
+      {/* VISOR 3D */}
+      <section className="viewer-section">
+
+        <div className="viewer-text">
+
+          <h2>
+            Experiencia 3D ✨
+          </h2>
+
+          <p>
+            Explora prendas interactivas,
+            rota los modelos y visualiza
+            cada detalle de manera inmersiva.
+          </p>
+
+        </div>
+
+        <Viewer3D />
+
+      </section>
 
       {/* CATÁLOGO */}
-      <div style={{ padding: "20px" }}>
-        <h2>Catálogo</h2>
+      <section className="catalogo">
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "15px"
-        }}>
-          <div style={card}>Blusa</div>
-          <div style={card}>Vestido</div>
-          <div style={card}>Pantalón</div>
+        <h2 className="catalogo-title">
+          Catálogo
+        </h2>
+
+        <div className="grid">
+
+          {products.length === 0 ? (
+
+            <p>
+              No hay productos aún
+            </p>
+
+          ) : (
+
+            products.map((product) => (
+
+              <ProductCard
+                key={product.id}
+                product={product}
+              />
+
+            ))
+
+          )}
+
         </div>
-      </div>
+
+      </section>
+
+      {/* FOOTER */}
+      <footer className="footer">
+
+        <h3>Bazar 3D ✨</h3>
+
+        <p>
+          Moda interactiva y experiencia premium
+        </p>
+
+      </footer>
 
     </div>
   );
 }
 
-const card = {
-  background: "#fff",
-  padding: "20px",
-  borderRadius: "15px",
-  textAlign: "center",
-  boxShadow: "0 5px 10px rgba(0,0,0,0.1)"
-};
+export default Home;
