@@ -10,7 +10,8 @@ import { useState, useEffect } from "react";
 import {
   getAuth,
   signInWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
+  createUserWithEmailAndPassword
 } from "firebase/auth";
 
 import { app, db } from "./services/firebase";
@@ -27,6 +28,7 @@ import ProductCard from "./components/ProductCard";
 
 /* PAGINAS */
 import ProductDetail from "./pages/ProductDetail";
+import Admin from "./pages/Admin";
 
 /* ===================== LOGIN ===================== */
 
@@ -65,32 +67,214 @@ function Login() {
 
       <div style={styles.card}>
 
-        <h2>Iniciar Sesión</h2>
+        {/* Logo */}
+        <div style={styles.logo}>✨</div>
 
-        <input
-          type="email"
-          placeholder="Correo"
-          style={styles.input}
-          onChange={(e) =>
-            setEmail(e.target.value)
-          }
-        />
+        <h2 style={styles.title}>
+          Mary's Closet
+        </h2>
 
-        <input
-          type="password"
-          placeholder="Contraseña"
-          style={styles.input}
-          onChange={(e) =>
-            setPassword(e.target.value)
-          }
-        />
+        <p style={styles.subtitle}>
+          Bazar de Segunda Mano
+        </p>
 
-        <button
-          style={styles.button}
-          onClick={handleLogin}
+        {/* Tabs */}
+        <div style={styles.tabsContainer}>
+
+          <button style={styles.activeTab}>
+            Iniciar Sesión
+          </button>
+
+          <button
+            style={styles.tab}
+            onClick={() => navigate("/register")}
+          >
+            Registrarse
+          </button>
+
+        </div>
+
+        {/* FORM */}
+        <div style={{ textAlign: "left" }}>
+
+          <label style={styles.label}>
+            Email
+          </label>
+
+          <input
+            type="email"
+            placeholder="tu@email.com"
+            style={styles.input}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+          />
+
+          <label style={styles.label}>
+            Contraseña
+          </label>
+
+          <input
+            type="password"
+            placeholder="****"
+            style={styles.input}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+          />
+
+          <button
+            style={styles.button}
+            onClick={handleLogin}
+          >
+            Iniciar Sesión
+          </button>
+
+        </div>
+
+        {/* INFO */}
+        <div style={styles.infoBox}>
+          Usuario de prueba <br />
+          test@test.com
+        </div>
+
+        <p
+          style={styles.adminText}
+          onClick={() => navigate("/admin")}
         >
-          Entrar
-        </button>
+          ¿Eres administrador? Ingresa aquí
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+/* ===================== REGISTER ===================== */
+
+function Register() {
+
+  const navigate = useNavigate();
+
+  const auth = getAuth(app);
+
+  const [email, setEmail] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const [confirmar, setConfirmar] =
+    useState("");
+
+  const handleRegister = async () => {
+
+    if (password !== confirmar) {
+
+      alert("Las contraseñas no coinciden");
+
+      return;
+
+    }
+
+    try {
+
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      alert("Usuario registrado");
+
+      navigate("/");
+
+    } catch (error) {
+
+      alert("Error: " + error.message);
+
+    }
+  };
+
+  return (
+
+    <div style={styles.container}>
+
+      <div style={styles.card}>
+
+        <div style={styles.logo}>✨</div>
+
+        <h2 style={styles.title}>
+          Mary's Closet
+        </h2>
+
+        <p style={styles.subtitle}>
+          Crear Cuenta
+        </p>
+
+        <div style={styles.tabsContainer}>
+
+          <button
+            style={styles.tab}
+            onClick={() => navigate("/")}
+          >
+            Iniciar Sesión
+          </button>
+
+          <button style={styles.activeTab}>
+            Registrarse
+          </button>
+
+        </div>
+
+        <div style={{ textAlign: "left" }}>
+
+          <label style={styles.label}>
+            Email
+          </label>
+
+          <input
+            type="email"
+            placeholder="tu@email.com"
+            style={styles.input}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+          />
+
+          <label style={styles.label}>
+            Contraseña
+          </label>
+
+          <input
+            type="password"
+            placeholder="****"
+            style={styles.input}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+          />
+
+          <label style={styles.label}>
+            Confirmar Contraseña
+          </label>
+
+          <input
+            type="password"
+            placeholder="****"
+            style={styles.input}
+            onChange={(e) =>
+              setConfirmar(e.target.value)
+            }
+          />
+
+          <button
+            style={styles.button}
+            onClick={handleRegister}
+          >
+            Crear Cuenta
+          </button>
+
+        </div>
 
       </div>
 
@@ -104,7 +288,8 @@ function Home() {
 
   const [products, setProducts] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
 
@@ -200,8 +385,6 @@ function Home() {
 
 function App() {
 
-  const [user, setUser] = useState(null);
-
   const [loadingAuth, setLoadingAuth] =
     useState(true);
 
@@ -212,9 +395,7 @@ function App() {
     const unsubscribe =
       onAuthStateChanged(
         auth,
-        (currentUser) => {
-
-          setUser(currentUser);
+        () => {
 
           setLoadingAuth(false);
 
@@ -240,18 +421,28 @@ function App() {
 
       <Routes>
 
-        {/* LOGIN / HOME */}
+        {/* LOGIN */}
         <Route
           path="/"
-          element={
-            user ? <Home /> : <Login />
-          }
+          element={<Login />}
+        />
+
+        {/* REGISTER */}
+        <Route
+          path="/register"
+          element={<Register />}
         />
 
         {/* HOME */}
         <Route
           path="/home"
           element={<Home />}
+        />
+
+        {/* ADMIN */}
+        <Route
+          path="/admin"
+          element={<Admin />}
         />
 
         {/* PRODUCTO 3D */}
@@ -277,36 +468,103 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#fce4ec"
+    background: "#e9dde2"
   },
 
   card: {
-    background: "#fff",
+    background: "#f8f2f4",
     padding: "30px",
-    borderRadius: "20px",
+    borderRadius: "15px",
     width: "320px",
-    boxShadow:
-      "0 10px 25px rgba(0,0,0,0.1)",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
     textAlign: "center"
+  },
+
+  logo: {
+    fontSize: "35px",
+    marginBottom: "10px"
+  },
+
+  title: {
+    color: "#e91e63",
+    margin: 0
+  },
+
+  subtitle: {
+    color: "#777",
+    fontSize: "13px",
+    marginBottom: "20px"
+  },
+
+  tabsContainer: {
+    display: "flex",
+    marginBottom: "20px",
+    gap: "5px"
+  },
+
+  activeTab: {
+    flex: 1,
+    padding: "8px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#e91e63",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: "bold"
+  },
+
+  tab: {
+    flex: 1,
+    padding: "8px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#f3d3df",
+    color: "#555",
+    cursor: "pointer"
+  },
+
+  label: {
+    fontSize: "14px",
+    color: "#555"
   },
 
   input: {
     width: "100%",
-    padding: "12px",
+    padding: "10px",
+    marginTop: "5px",
     marginBottom: "15px",
-    borderRadius: "10px",
-    border: "1px solid #ccc"
+    borderRadius: "8px",
+    border: "1px solid #e91e63",
+    boxSizing: "border-box"
   },
 
   button: {
     width: "100%",
-    padding: "12px",
-    background: "#ec407a",
+    padding: "10px",
+    background: "#e91e63",
     color: "#fff",
     border: "none",
-    borderRadius: "10px",
+    borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "bold"
+  },
+
+  infoBox: {
+    marginTop: "15px",
+    background: "#f1f1f1",
+    padding: "10px",
+    borderRadius: "8px",
+    fontSize: "12px",
+    color: "#666"
+  },
+
+  adminText: {
+    marginTop: "15px",
+    fontSize: "12px",
+    color: "#e91e63",
+    cursor: "pointer",
+    fontWeight: "bold",
+    textDecoration: "underline"
   }
 };
 

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { Canvas } from "@react-three/fiber";
 
 import {
@@ -11,14 +13,15 @@ import {
 function Model() {
 
   const { scene } = useGLTF(
-    "/models/T-shirt.glb"
+    "/models/ropa.glb"
   );
 
   return (
 
     <primitive
       object={scene}
-      scale={0.3}
+      scale={1}
+      position={[0, -1, 0]}
     />
 
   );
@@ -34,7 +37,7 @@ function Viewer3D() {
       style={{
         width: "100%",
         height: "600px",
-        background: "#fff",
+        background: "#ffffff",
         borderRadius: "20px",
         overflow: "hidden"
       }}
@@ -45,20 +48,23 @@ function Viewer3D() {
       >
 
         {/* LUCES */}
-        <ambientLight intensity={1.5} />
+        <ambientLight intensity={2} />
 
         <directionalLight
           position={[2, 2, 2]}
         />
 
-        {/* MODELO */}
-        <Model />
+        {/* SUSPENSE */}
+        <Suspense fallback={null}>
+
+          <Model />
+
+          <Environment preset="studio" />
+
+        </Suspense>
 
         {/* CONTROLES */}
         <OrbitControls />
-
-        {/* AMBIENTE */}
-        <Environment preset="studio" />
 
       </Canvas>
 
